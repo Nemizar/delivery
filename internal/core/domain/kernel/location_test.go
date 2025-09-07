@@ -96,6 +96,7 @@ func TestNewLocation(t *testing.T) {
 			if tt.wantErr != nil {
 				assert.Equal(t, tt.wantErr.Error(), err.Error())
 				assert.Equal(t, kernel.Location{}, l)
+				assert.False(t, l.IsValid())
 
 				return
 			}
@@ -104,6 +105,7 @@ func TestNewLocation(t *testing.T) {
 
 			assert.Equal(t, tt.wantX, l.X())
 			assert.Equal(t, tt.wantY, l.Y())
+			assert.True(t, l.IsValid())
 		})
 	}
 }
