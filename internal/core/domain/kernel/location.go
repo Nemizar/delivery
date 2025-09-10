@@ -7,8 +7,9 @@ import (
 )
 
 type Location struct {
-	x int
-	y int
+	x       int
+	y       int
+	isValid bool
 }
 
 const (
@@ -28,8 +29,9 @@ func NewLocation(x, y int) (Location, error) {
 	}
 
 	return Location{
-		x: x,
-		y: y,
+		x:       x,
+		y:       y,
+		isValid: true,
 	}, nil
 }
 
@@ -75,4 +77,8 @@ func randomCoordinate(min, max int) int {
 
 func (l Location) String() string {
 	return fmt.Sprintf("(%d,%d)", l.x, l.y)
+}
+
+func (l Location) IsValid() bool {
+	return l.isValid
 }
