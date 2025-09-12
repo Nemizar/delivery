@@ -26,6 +26,10 @@ func TestOrderDispatcher_Dispatch_Success(t *testing.T) {
 	got, err := dispatcher.Dispatch(o, couriers)
 	require.NoError(t, err)
 	assert.Equal(t, couriers[0], got)
+
+	assert.Equal(t, order.StatusAssigned, o.Status())
+	require.NotNil(t, o.CourierID())
+	assert.Equal(t, couriers[0].Id(), *o.CourierID())
 }
 
 func TestOrderDispatcher_Dispatch_Errors(t *testing.T) {

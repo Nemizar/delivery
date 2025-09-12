@@ -52,6 +52,11 @@ func (od orderDispatcher) Dispatch(o *order.Order, couriers []*courier.Courier) 
 		return nil, err
 	}
 
+	err = o.Assign(bestCourier.Id())
+	if err != nil {
+		return nil, err
+	}
+
 	return bestCourier, nil
 }
 
