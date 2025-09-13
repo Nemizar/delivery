@@ -1,6 +1,7 @@
 package courier
 
 import (
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/errs"
 	"errors"
 	"strings"
@@ -14,7 +15,7 @@ var (
 )
 
 type StoragePlace struct {
-	id          uuid.UUID
+	baseEntity  *ddd.BaseEntity[uuid.UUID]
 	name        string
 	totalVolume int
 	orderID     *uuid.UUID
@@ -30,14 +31,23 @@ func NewStoragePlace(name string, totalVolume int) (*StoragePlace, error) {
 	}
 
 	return &StoragePlace{
-		id:          uuid.New(),
+		baseEntity:  ddd.NewBaseEntity(uuid.New()),
 		name:        name,
 		totalVolume: totalVolume,
 	}, nil
 }
 
+func RestoreStoragePlace(id uuid.UUID, name string, totalVolume int, orderID *uuid.UUID) *StoragePlace {
+	return &StoragePlace{
+		baseEntity:  ddd.NewBaseEntity(id),
+		name:        name,
+		totalVolume: totalVolume,
+		orderID:     orderID,
+	}
+}
+
 func (s *StoragePlace) Id() uuid.UUID {
-	return s.id
+	return s.baseEntity.ID()
 }
 
 func (s *StoragePlace) Name() string {
@@ -57,7 +67,7 @@ func (s *StoragePlace) Equals(other *StoragePlace) bool {
 		return false
 	}
 
-	return s.id == other.id
+	return s.baseEntity.Equal(other.baseEntity)
 }
 
 func (s *StoragePlace) CanStore(volume int) (bool, error) {

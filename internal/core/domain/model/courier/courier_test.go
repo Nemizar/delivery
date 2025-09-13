@@ -1,8 +1,8 @@
 package courier_test
 
 import (
-	"delivery/internal/core/domain/kernel"
 	"delivery/internal/core/domain/model/courier"
+	"delivery/internal/core/domain/model/kernel"
 	"delivery/internal/core/domain/model/order"
 	"delivery/internal/pkg/errs"
 	"testing"

@@ -1,7 +1,7 @@
 package kernel_test
 
 import (
-	"delivery/internal/core/domain/kernel"
+	"delivery/internal/core/domain/model/kernel"
 	"delivery/internal/pkg/errs"
 	"testing"
 

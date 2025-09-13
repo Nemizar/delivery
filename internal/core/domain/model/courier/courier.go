@@ -1,8 +1,9 @@
 package courier
 
 import (
-	"delivery/internal/core/domain/kernel"
+	"delivery/internal/core/domain/model/kernel"
 	"delivery/internal/core/domain/model/order"
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/errs"
 	"errors"
 	"math"
@@ -16,7 +17,7 @@ var (
 )
 
 type Courier struct {
-	id            uuid.UUID
+	baseAggregate *ddd.BaseAggregate[uuid.UUID]
 	name          string
 	speed         int
 	location      kernel.Location
@@ -37,7 +38,7 @@ func NewCourier(name string, speed int, location kernel.Location) (*Courier, err
 	}
 
 	c := &Courier{
-		id:            uuid.New(),
+		baseAggregate: ddd.NewBaseAggregate(uuid.New()),
 		name:          name,
 		speed:         speed,
 		location:      location,
@@ -52,8 +53,18 @@ func NewCourier(name string, speed int, location kernel.Location) (*Courier, err
 	return c, nil
 }
 
+func RestoreCourier(id uuid.UUID, name string, speed int, location kernel.Location, storagePlaces []*StoragePlace) *Courier {
+	return &Courier{
+		baseAggregate: ddd.NewBaseAggregate(id),
+		name:          name,
+		speed:         speed,
+		location:      location,
+		storagePlaces: storagePlaces,
+	}
+}
+
 func (c *Courier) Id() uuid.UUID {
-	return c.id
+	return c.baseAggregate.ID()
 }
 
 func (c *Courier) Name() string {
@@ -77,7 +88,7 @@ func (c *Courier) Equals(other *Courier) bool {
 		return false
 	}
 
-	return c.id == other.id
+	return c.baseAggregate.Equal(other.baseAggregate)
 }
 
 func (c *Courier) AddStoragePlace(name string, volume int) error {
