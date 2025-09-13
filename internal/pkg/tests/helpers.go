@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"delivery/internal/core/domain/kernel"
 	"delivery/internal/core/domain/model/courier"
+	"delivery/internal/core/domain/model/kernel"
 	"delivery/internal/core/domain/model/order"
 
 	"github.com/google/uuid"
