@@ -1,7 +1,8 @@
 package order
 
 import (
-	"delivery/internal/core/domain/kernel"
+	"delivery/internal/core/domain/model/kernel"
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/errs"
 	"errors"
 
@@ -16,11 +17,11 @@ var (
 )
 
 type Order struct {
-	id        uuid.UUID
-	courierID *uuid.UUID
-	location  kernel.Location
-	volume    int
-	status    Status
+	baseAggregate *ddd.BaseAggregate[uuid.UUID]
+	courierID     *uuid.UUID
+	location      kernel.Location
+	volume        int
+	status        Status
 }
 
 func NewOrder(id uuid.UUID, location kernel.Location, volume int) (*Order, error) {
@@ -37,15 +38,25 @@ func NewOrder(id uuid.UUID, location kernel.Location, volume int) (*Order, error
 	}
 
 	return &Order{
-		id:       id,
-		location: location,
-		volume:   volume,
-		status:   StatusCreated,
+		baseAggregate: ddd.NewBaseAggregate(id),
+		location:      location,
+		volume:        volume,
+		status:        StatusCreated,
 	}, nil
 }
 
+func RestoreOrder(id uuid.UUID, courierID *uuid.UUID, location kernel.Location, volume int, status Status) *Order {
+	return &Order{
+		baseAggregate: ddd.NewBaseAggregate(id),
+		courierID:     courierID,
+		location:      location,
+		volume:        volume,
+		status:        status,
+	}
+}
+
 func (o *Order) ID() uuid.UUID {
-	return o.id
+	return o.baseAggregate.ID()
 }
 
 func (o *Order) CourierID() *uuid.UUID {
@@ -64,8 +75,20 @@ func (o *Order) Status() Status {
 	return o.status
 }
 
+func (o *Order) ClearDomainEvents() {
+	o.baseAggregate.ClearDomainEvents()
+}
+
+func (o *Order) GetDomainEvents() []ddd.DomainEvent {
+	return o.baseAggregate.GetDomainEvents()
+}
+
+func (o *Order) RaiseDomainEvent(event ddd.DomainEvent) {
+	o.baseAggregate.RaiseDomainEvent(event)
+}
+
 func (o *Order) Equals(other *Order) bool {
-	return o.id == other.id
+	return o.ID() == other.ID()
 }
 
 func (o *Order) Assign(courierID uuid.UUID) error {

@@ -71,6 +71,24 @@ func RandomLocation() Location {
 	return loc
 }
 
+func MinLocation() Location {
+	loc, err := NewLocation(minXCoordinate, minYCoordinate)
+	if err != nil {
+		panic(fmt.Errorf("incorrect min location: %w", err))
+	}
+
+	return loc
+}
+
+func MaxLocation() Location {
+	loc, err := NewLocation(maxXCoordinate, maxYCoordinate)
+	if err != nil {
+		panic(fmt.Errorf("incorrect max location: %w", err))
+	}
+
+	return loc
+}
+
 func randomCoordinate(min, max int) int {
 	return rand.IntN(max-min+1) + min
 }
