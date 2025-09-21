@@ -6,6 +6,7 @@ import (
 	"delivery/internal/core/domain/model/order"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
+	"errors"
 )
 
 type CreateOrderCommandHandler interface {
@@ -41,7 +42,9 @@ func (h createOrderCommandHandler) Handle(ctx context.Context, command CreateOrd
 
 	orderAggregate, err := uow.OrderRepository().Get(ctx, command.OrderID())
 	if err != nil {
-		return err
+		if !errors.Is(err, errs.ErrObjectNotFound) {
+			return err
+		}
 	}
 
 	if orderAggregate != nil {
