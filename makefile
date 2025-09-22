@@ -1,4 +1,5 @@
 APP_NAME=delivery
+UTILS_COMMAND = docker build -q -f .docker/utils/Dockerfile .docker/utils | xargs -I % docker run --rm -v .:/src %
 
 .PHONY: build test
 build: test ## Build application
@@ -25,3 +26,6 @@ generate-order-queue:
 	@rm -rf internal/generated/queues/orderstatuschangedpb
 	@curl -s -o configs/order_status_changed.proto https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/order_status_changed.proto
 	@protoc --go_out=internal/generated --go-grpc_out=internal/generated configs/order_status_changed.proto
+
+generate-rest-server:
+	${UTILS_COMMAND} oapi-codegen -config configs/server.cfg.yaml https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/openapi.yml
