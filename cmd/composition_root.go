@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"delivery/internal/adapters/out/postgres"
+	"delivery/internal/core/application/usecases/commands"
+	"delivery/internal/core/application/usecases/queries"
 	"delivery/internal/core/domain/services"
 	"delivery/internal/core/ports"
 	"log"
@@ -42,4 +44,53 @@ func (cr *CompositionRoot) NewUnitOfWorkFactory() ports.UnitOfWorkFactory {
 		log.Fatalf("cannot create UnitOfWorkFactory: %v", err)
 	}
 	return unitOfWorkFactory
+}
+func (cr *CompositionRoot) NewCreateOrderCommandHandler() commands.CreateOrderCommandHandler {
+	commandHandler, err := commands.NewCreateOrderCommandHandler(cr.NewUnitOfWorkFactory())
+	if err != nil {
+		log.Fatalf("cannot create CreateOrderCommandHandler: %v", err)
+	}
+	return commandHandler
+}
+
+func (cr *CompositionRoot) NewCreateCourierCommandHandler() commands.CreateCourierCommandHandler {
+	commandHandler, err := commands.NewCreateCourierCommandHandler(cr.NewUnitOfWorkFactory())
+	if err != nil {
+		log.Fatalf("cannot create CreateCourierCommandHandler: %v", err)
+	}
+	return commandHandler
+}
+
+func (cr *CompositionRoot) NewAssignOrdersCommandHandler() commands.AssignOrdersCommandHandler {
+	commandHandler, err := commands.NewAssignOrdersCommandHandler(
+		cr.NewUnitOfWorkFactory(), cr.NewOrderDispatcher())
+	if err != nil {
+		log.Fatalf("cannot create AssignOrdersCommandHandler: %v", err)
+	}
+	return commandHandler
+}
+
+func (cr *CompositionRoot) NewMoveCouriersCommandHandler() commands.MoveCouriersCommandHandler {
+	commandHandler, err := commands.NewMoveCouriersCommandHandler(
+		cr.NewUnitOfWorkFactory())
+	if err != nil {
+		log.Fatalf("cannot create MoveCouriersCommandHandler: %v", err)
+	}
+	return commandHandler
+}
+
+func (cr *CompositionRoot) NewGetAllCouriersQueryHandler() queries.GetAllCouriersQueryHandler {
+	queryHandler, err := queries.NewGetAllCouriersQueryHandler(cr.gormDb)
+	if err != nil {
+		log.Fatalf("cannot create GetAllCouriersQueryHandler: %v", err)
+	}
+	return queryHandler
+}
+
+func (cr *CompositionRoot) NewGetNotCompletedOrdersQueryHandler() queries.GetNotCompletedOrdersQueryHandler {
+	queryHandler, err := queries.NewGetNotCompletedOrdersQueryHandler(cr.gormDb)
+	if err != nil {
+		log.Fatalf("cannot create GetNotCompletedOrdersQueryHandler: %v", err)
+	}
+	return queryHandler
 }
