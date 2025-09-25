@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"delivery/internal/adapters/out/grpc/geo"
 	"delivery/internal/adapters/out/postgres"
 	"delivery/internal/core/application/usecases/commands"
 	"delivery/internal/core/application/usecases/queries"
@@ -8,16 +9,18 @@ import (
 	"delivery/internal/core/ports"
 	"delivery/internal/jobs"
 	"log"
+	"sync"
 
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 )
 
 type CompositionRoot struct {
-	configs Config
-	gormDb  *gorm.DB
-
-	closers []Closer
+	configs   Config
+	gormDb    *gorm.DB
+	geoClient ports.GeoClient
+	onceGeo   sync.Once
+	closers   []Closer
 }
 
 func NewCompositionRoot(configs Config, gormDb *gorm.DB) *CompositionRoot {
@@ -48,7 +51,7 @@ func (cr *CompositionRoot) NewUnitOfWorkFactory() ports.UnitOfWorkFactory {
 	return unitOfWorkFactory
 }
 func (cr *CompositionRoot) NewCreateOrderCommandHandler() commands.CreateOrderCommandHandler {
-	commandHandler, err := commands.NewCreateOrderCommandHandler(cr.NewUnitOfWorkFactory())
+	commandHandler, err := commands.NewCreateOrderCommandHandler(cr.NewUnitOfWorkFactory(), cr.NewGeoClient())
 	if err != nil {
 		log.Fatalf("cannot create CreateOrderCommandHandler: %v", err)
 	}
@@ -111,4 +114,17 @@ func (cr *CompositionRoot) NewMoveCouriersJob() cron.Job {
 		log.Fatalf("cannot create MoveCouriersJob: %v", err)
 	}
 	return job
+}
+
+func (cr *CompositionRoot) NewGeoClient() ports.GeoClient {
+	cr.onceGeo.Do(func() {
+		client, err := geo.NewClient(cr.configs.GeoServiceGrpcHost)
+		if err != nil {
+			log.Fatalf("cannot create GeoClient: %v", err)
+		}
+
+		cr.RegisterCloser(client)
+		cr.geoClient = client
+	})
+	return cr.geoClient
 }
