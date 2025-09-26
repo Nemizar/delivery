@@ -32,3 +32,6 @@ generate-rest-server:
 
 generate-grpc-client:
 	${UTILS_COMMAND} protoc --go_out=./internal/generated/clients --go-grpc_out=./internal/generated/clients ./api/proto/geo_service.proto
+
+generate-kafka-msg:
+	${UTILS_COMMAND} protoc --go_out=./internal/generated ./api/proto/basket_confirmed.proto
