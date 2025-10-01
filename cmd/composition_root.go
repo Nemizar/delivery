@@ -3,12 +3,16 @@ package cmd
 import (
 	"delivery/internal/adapters/in/kafka"
 	"delivery/internal/adapters/out/grpc/geo"
+	oProducer "delivery/internal/adapters/out/kafka"
 	"delivery/internal/adapters/out/postgres"
+	"delivery/internal/core/application/eventshandler"
 	"delivery/internal/core/application/usecases/commands"
 	"delivery/internal/core/application/usecases/queries"
+	"delivery/internal/core/domain/model/order"
 	"delivery/internal/core/domain/services"
 	"delivery/internal/core/ports"
 	"delivery/internal/jobs"
+	"delivery/internal/pkg/ddd"
 	"log"
 	"sync"
 
@@ -37,7 +41,7 @@ func (cr *CompositionRoot) NewOrderDispatcher() services.OrderDispatcher {
 }
 
 func (cr *CompositionRoot) NewUnitOfWork() ports.UnitOfWork {
-	unitOfWork, err := postgres.NewUnitOfWork(cr.gormDb)
+	unitOfWork, err := postgres.NewUnitOfWork(cr.gormDb, cr.NewMediatrWithSubscriptions())
 	if err != nil {
 		log.Fatalf("cannot create UnitOfWork: %v", err)
 	}
@@ -45,7 +49,7 @@ func (cr *CompositionRoot) NewUnitOfWork() ports.UnitOfWork {
 }
 
 func (cr *CompositionRoot) NewUnitOfWorkFactory() ports.UnitOfWorkFactory {
-	unitOfWorkFactory, err := postgres.NewUnitOfWorkFactory(cr.gormDb)
+	unitOfWorkFactory, err := postgres.NewUnitOfWorkFactory(cr.gormDb, cr.NewMediatrWithSubscriptions())
 	if err != nil {
 		log.Fatalf("cannot create UnitOfWorkFactory: %v", err)
 	}
@@ -145,4 +149,33 @@ func (cr *CompositionRoot) NewBasketConfirmedConsumer() kafka.BasketConfirmedCon
 	cr.RegisterCloser(consumer)
 
 	return consumer
+}
+
+func (cr *CompositionRoot) NewMediatrWithSubscriptions() ddd.Mediatr {
+	mediatr := ddd.NewMediatr()
+	mediatr.Subscribe(cr.NewOrderCompletedDomainEventHandler(), order.NewEmptyCompletedDomainEvent())
+
+	return mediatr
+}
+
+func (cr *CompositionRoot) NewOrderCompletedDomainEventHandler() ddd.EventHandler {
+	producer := cr.NewOrderProducer()
+
+	handler, err := eventshandler.NewOrderCompletedEventHandler(producer)
+	if err != nil {
+		log.Fatalf("cannot create OrderCompletedDomainEventHandler: %v", err)
+	}
+
+	return handler
+}
+
+func (cr *CompositionRoot) NewOrderProducer() ports.OrderProducer {
+	producer, err := oProducer.NewOrderProducer([]string{cr.configs.KafkaHost}, cr.configs.KafkaOrderChangedTopic)
+	if err != nil {
+		log.Fatalf("cannot create OrderProducer: %v", err)
+	}
+
+	cr.RegisterCloser(producer)
+
+	return producer
 }

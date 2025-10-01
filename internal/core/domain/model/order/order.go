@@ -125,5 +125,7 @@ func (o *Order) Complete() error {
 
 	o.status = StatusCompleted
 
+	o.RaiseDomainEvent(NewCompletedDomainEvent(o))
+
 	return nil
 }
