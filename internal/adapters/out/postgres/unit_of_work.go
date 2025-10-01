@@ -7,6 +7,7 @@ import (
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/errs"
+	"delivery/internal/pkg/outbox"
 	"errors"
 
 	"github.com/labstack/gommon/log"
@@ -88,11 +89,11 @@ func (u *UnitOfWork) Commit(ctx context.Context) error {
 		return errs.NewValueIsRequiredError("cannot commit without transaction")
 	}
 
-	if err := u.tx.WithContext(ctx).Commit().Error; err != nil {
+	if err := u.persistDomainEvents(ctx, u.tx); err != nil {
 		return err
 	}
 
-	if err := u.publishDomainEvents(ctx); err != nil {
+	if err := u.tx.WithContext(ctx).Commit().Error; err != nil {
 		return err
 	}
 
@@ -116,13 +117,16 @@ func (u *UnitOfWork) clearTx() {
 	u.committed = false
 }
 
-func (u *UnitOfWork) publishDomainEvents(ctx context.Context) error {
+func (u *UnitOfWork) persistDomainEvents(ctx context.Context, tx *gorm.DB) error {
 	for _, aggregate := range u.trackedAggregates {
-		for _, event := range aggregate.GetDomainEvents() {
-			err := u.mediatr.Publish(ctx, event)
-			if err != nil {
-				log.Error(err)
-				continue
+		outboxEvents, err := outbox.EncodeDomainEvents(aggregate.GetDomainEvents())
+		if err != nil {
+			return err
+		}
+
+		if len(outboxEvents) > 0 {
+			if err := tx.WithContext(ctx).Create(&outboxEvents).Error; err != nil {
+				return err
 			}
 		}
 
