@@ -29,6 +29,8 @@ func NewRepository(tracker Tracker) (*Repository, error) {
 }
 
 func (r *Repository) Add(ctx context.Context, aggregate *order.Order) error {
+	r.tracker.Track(aggregate)
+
 	return r.withTx(ctx, func(tx *gorm.DB) error {
 		dto := DomainToDTO(aggregate)
 
@@ -42,6 +44,8 @@ func (r *Repository) Add(ctx context.Context, aggregate *order.Order) error {
 }
 
 func (r *Repository) Update(ctx context.Context, aggregate *order.Order) error {
+	r.tracker.Track(aggregate)
+
 	return r.withTx(ctx, func(tx *gorm.DB) error {
 		dto := DomainToDTO(aggregate)
 

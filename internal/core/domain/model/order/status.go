@@ -2,9 +2,9 @@ package order
 
 const (
 	StatusEmpty     Status = ""
-	StatusCreated   Status = "created"
-	StatusAssigned  Status = "assigned"
-	StatusCompleted Status = "completed"
+	StatusCreated   Status = "Created"
+	StatusAssigned  Status = "Assigned"
+	StatusCompleted Status = "Completed"
 )
 
 type Status string

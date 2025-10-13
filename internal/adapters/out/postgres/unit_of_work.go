@@ -22,15 +22,21 @@ type UnitOfWork struct {
 	trackedAggregates []ddd.AggregateRoot
 	courierRepository ports.CourierRepository
 	orderRepository   ports.OrderRepository
+	mediatr           ddd.Mediatr
 }
 
-func NewUnitOfWork(db *gorm.DB) (ports.UnitOfWork, error) {
+func NewUnitOfWork(db *gorm.DB, mediatr ddd.Mediatr) (ports.UnitOfWork, error) {
 	if db == nil {
 		return nil, errs.NewValueIsRequiredError("db")
 	}
 
+	if mediatr == nil {
+		return nil, errs.NewValueIsRequiredError("mediatr")
+	}
+
 	uow := &UnitOfWork{
-		db: db,
+		db:      db,
+		mediatr: mediatr,
 	}
 
 	courierRepo, err := courierrepo.NewRepository(uow)
@@ -86,6 +92,10 @@ func (u *UnitOfWork) Commit(ctx context.Context) error {
 		return err
 	}
 
+	if err := u.publishDomainEvents(ctx); err != nil {
+		return err
+	}
+
 	u.committed = true
 	u.clearTx()
 	return nil
@@ -104,4 +114,20 @@ func (u *UnitOfWork) clearTx() {
 	u.tx = nil
 	u.trackedAggregates = nil
 	u.committed = false
+}
+
+func (u *UnitOfWork) publishDomainEvents(ctx context.Context) error {
+	for _, aggregate := range u.trackedAggregates {
+		for _, event := range aggregate.GetDomainEvents() {
+			err := u.mediatr.Publish(ctx, event)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+		}
+
+		aggregate.ClearDomainEvents()
+	}
+
+	return nil
 }
