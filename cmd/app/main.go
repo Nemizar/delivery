@@ -265,6 +265,11 @@ func startCron(compositionRoot *cmd.CompositionRoot) {
 		log.Fatalf("ошибка при добавлении задачи: %v", err)
 	}
 
+	_, err = c.AddJob("@every 1s", compositionRoot.NewOutboxJob())
+	if err != nil {
+		log.Fatalf("ошибка при добавлении задачи: %v", err)
+	}
+
 	c.Start()
 }
 

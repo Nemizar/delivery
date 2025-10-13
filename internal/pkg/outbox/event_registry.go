@@ -50,20 +50,32 @@ func EncodeDomainEvent(domainEvent ddd.DomainEvent) (Message, error) {
 	}, nil
 }
 
+func EncodeDomainEvents(domainEvent []ddd.DomainEvent) ([]Message, error) {
+	outboxMessages := make([]Message, 0)
+
+	for _, event := range domainEvent {
+		event, err := EncodeDomainEvent(event)
+		if err != nil {
+			return nil, err
+		}
+		outboxMessages = append(outboxMessages, event)
+	}
+
+	return outboxMessages, nil
+}
+
 func (r *eventRegistry) DecodeDomainEvent(outboxMessage *Message) (ddd.DomainEvent, error) {
 	t, ok := r.EventRegistry[outboxMessage.Name]
 	if !ok {
 		return nil, fmt.Errorf("unknown outboxMessage type: %s", outboxMessage.Name)
 	}
 
-	// Создаём новый указатель на нужный тип
 	eventPtr := reflect.New(t).Interface()
 
 	if err := json.Unmarshal(outboxMessage.Payload, eventPtr); err != nil {
 		return nil, fmt.Errorf("failed to decode payload: %w", err)
 	}
 
-	// Приводим к DomainEvent
 	domainEvent, ok := eventPtr.(ddd.DomainEvent)
 	if !ok {
 		return nil, fmt.Errorf("decoded outboxMessage does not implement DomainEvent")
